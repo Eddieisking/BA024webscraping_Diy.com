@@ -7,3 +7,4 @@ The detail can be summarized as follows.
 2. In each product page, extract each product's link.
 3. In the product's link, find the customer reviews' link which is loaded through the Ajax URL.
 4. Then, replace the product_id, offset number and limit number of each Ajax URL that is related to different products to extract the customer revies.
+TIP: Ajax URL uses json format data.
