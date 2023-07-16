@@ -22,9 +22,8 @@ class SpiderSpider(scrapy.Spider):
         exist_keywords = ['dewalt', 'stanley tools', 'Black+Decker', 'Craftsman', 'Bostitch', 'Facom', 'Irwin Tools', 'Lenox']
         # company = 'Stanley Black and Decker'
 
-        keywords = ['dewalt']
         # from search words to generate product_urls
-        for keyword in keywords:
+        for keyword in exist_keywords:
             push_key = {'keyword': keyword}
             search_url = f'https://www.diy.com/search?term={keyword}'
 
@@ -99,9 +98,6 @@ class SpiderSpider(scrapy.Spider):
         limit_number = datas.get('Limit', 0)
         total_number = datas.get('TotalResults', 0)
 
-        print('offset_number, limit_number, total_number')
-        print(offset_number, limit_number, total_number)
-
         for i in range(limit_number):
             item = WebscrapyItem()
             # results = batch_results.get(result_key, {}).get('Results', [])
@@ -109,7 +105,7 @@ class SpiderSpider(scrapy.Spider):
             try:
                 item['review_id'] = batch_results[i].get('Id', 'N/A')
                 item['product_name'] = product_name
-                item['customer_name'] = batch_results[i].get('UserNickname', 'Anonymous')
+                item['customer_name'] = batch_results[i].get('UserNickname', 'Anonymous') if batch_results[i].get('UserNickname', 'Anonymous') else 'Ananymous'
                 item['customer_rating'] = batch_results[i].get('Rating', 'N/A')
                 item['customer_date'] = batch_results[i].get('SubmissionTime', 'N/A')
                 item['customer_review'] = batch_results[i].get('ReviewText', 'N/A')
