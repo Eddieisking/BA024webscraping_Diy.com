@@ -18,8 +18,8 @@ class SpiderSpider(scrapy.Spider):
     headers = {}  #
 
     def start_requests(self):
-        # keywords = ['DeWalt', 'Black+and+Decker', 'Stanley', 'Craftsman', 'Porter-Cable', 'Bostitch', 'Irwin+Tools',
-        #             'Lenox']
+        # keywords = ['dewalt', 'Stanley', 'Black+Decker', 'Craftsman', 'Porter-Cable', 'Bostitch', 'Facom', 'MAC Tools', 'Vidmar', 'Lista', 'Irwin Tools', 'Lenox', 'Proto', 'CribMaster', 'Powers Fasteners', 'cub-cadet', 'hustler', 'troy-bilt', 'rover', 'BigDog Mower', 'MTD']
+        exist_keywords = ['dewalt', 'stanley tools', 'Black+Decker', 'Craftsman', 'Bostitch', 'Facom', 'Irwin Tools', 'Lenox']
         # company = 'Stanley Black and Decker'
 
         keywords = ['dewalt']
@@ -49,7 +49,7 @@ class SpiderSpider(scrapy.Spider):
         # Based on pages to build product_urls
         keyword = kwargs['keyword']
         product_urls = [f'https://www.diy.com/search?page={page}&term={keyword}' for page
-                        in range(1, 2)]
+                        in range(1, pages)]
 
         for product_url in product_urls:
             yield Request(url=product_url, callback=self.product_parse)
@@ -67,6 +67,7 @@ class SpiderSpider(scrapy.Spider):
 
         product_id = response.xpath('.//*[@id="product-details"]//td[@data-test-id="product-ean-spec"]/text()')[
             0].extract()
+        product_name = response.xpath('//h1[@id="product-title"]/text()')[0].extract()
 
         # Product reviews url
         product_detailed_href = f'https://api.bazaarvoice.com/data/reviews.json?resource=reviews&action' \
@@ -78,10 +79,10 @@ class SpiderSpider(scrapy.Spider):
                                 f'=2191-en_gb '
 
         if product_detailed_href:
-            yield Request(url=product_detailed_href, callback=self.review_parse)
+            yield Request(url=product_detailed_href, callback=self.review_parse, meta={'product_name': product_name})
 
     def review_parse(self, response: Request, **kwargs):
-
+        product_name = response.meta['product_name']
         datas = json.loads(response.body)
         batch_results = datas.get('Results', {})
 
@@ -107,7 +108,7 @@ class SpiderSpider(scrapy.Spider):
 
             try:
                 item['review_id'] = batch_results[i].get('Id', 'N/A')
-                item['product_name'] = batch_results[i].get('ProductId', 'N/A')
+                item['product_name'] = product_name
                 item['customer_name'] = batch_results[i].get('UserNickname', 'Anonymous')
                 item['customer_rating'] = batch_results[i].get('Rating', 'N/A')
                 item['customer_date'] = batch_results[i].get('SubmissionTime', 'N/A')
@@ -123,5 +124,5 @@ class SpiderSpider(scrapy.Spider):
         if (offset_number + limit_number) < total_number:
             offset_number += limit_number
             next_page = re.sub(r'limit=\d+&offset=\d+', f'limit={30}&offset={offset_number}', response.url)
-            yield Request(url=next_page, callback=self.review_parse)
+            yield Request(url=next_page, callback=self.review_parse, meta={'product_name': product_name})
 
