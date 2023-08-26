@@ -15,14 +15,13 @@ from webscrapy.items import WebscrapyItem
 class SpiderSpider(scrapy.Spider):
     name = "spider"
     allowed_domains = ["www.diy.com", "api.bazaarvoice.com", "api.kingfisher.com"]
-    headers = {}  #
+    headers = {}  
 
     def start_requests(self):
         # keywords = ['dewalt', 'Stanley', 'Black+Decker', 'Craftsman', 'Porter-Cable', 'Bostitch', 'Facom', 'MAC Tools', 'Vidmar', 'Lista', 'Irwin Tools', 'Lenox', 'Proto', 'CribMaster', 'Powers Fasteners', 'cub-cadet', 'hustler', 'troy-bilt', 'rover', 'BigDog Mower', 'MTD']
-        exist_keywords = ['dewalt', 'stanley tools', 'Black+Decker', 'Bostitch', 'Facom', 'Irwin', 'Lenox'] # ***************************************
+        exist_keywords = ['dewalt', 'stanley tools', 'Black+Decker', 'Bostitch', 'Facom', 'Irwin', 'Lenox']
+       
         # company = 'Stanley Black and Decker'
-        # exist_keywords = ['dewalt']
-
         # from search words to generate product_urls
         for keyword in exist_keywords:
             push_key = {'keyword': keyword}
@@ -42,15 +41,18 @@ class SpiderSpider(scrapy.Spider):
         # Based on pages to build product_urls
         keyword = kwargs['keyword']
         product_urls = [f'https://www.diy.com/search?page={page}&term={keyword}' for page
-                        in range(1, pages+1)]  # pages+1 ***************************************************************
-
+                        in range(1, pages+1)]  # pages+1 
+        
         for product_url in product_urls:
+            
             yield Request(url=product_url, callback=self.product_parse, meta={'product_brand': keyword})
 
     def product_parse(self, response: Request, **kwargs):
         product_brand = response.meta['product_brand']
+        
         # extract the product url link from each page of product list
         product_urls = re.findall(r'"shareableUrl":"(.*?)"', response.body.decode('utf-8'))
+        
         for product_url in product_urls:
             product_detailed_url = product_url.encode().decode('unicode-escape')
 
@@ -77,7 +79,6 @@ class SpiderSpider(scrapy.Spider):
             elif th_text == "Model name/number":
                 product_model = td_text[0] if td_text else 'N/A'
 
-
         # Product reviews url
         product_detailed_href = f'https://api.bazaarvoice.com/data/reviews.json?resource=reviews&action' \
                                 f'=REVIEWS_N_STATS&filter=productid%3Aeq%3A{product_id}&filter=contentlocale%3Aeq%3Aen_FR%2Cfr_FR' \
@@ -95,27 +96,17 @@ class SpiderSpider(scrapy.Spider):
         product_brand = response.meta['product_brand']
         product_model = response.meta['product_model']
         product_type = response.meta['product_type']
-
         datas = json.loads(response.body)
         batch_results = datas.get('Results', {})
-
         offset_number = 0
         limit_number = 0
         total_number = 0
-
-        # if "q1" in batch_results:
-        #     result_key = "q1"
-        # else:
-        #     result_key = "q0"
-
         offset_number = datas.get('Offset', 0)
         limit_number = datas.get('Limit', 0)
         total_number = datas.get('TotalResults', 0)
 
         for i in range(limit_number):
             item = WebscrapyItem()
-            # results = batch_results.get(result_key, {}).get('Results', [])
-
             try:
                 item['review_id'] = batch_results[i].get('Id', 'N/A')
                 item['product_website'] = 'diy_en'
